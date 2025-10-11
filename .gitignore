@@ -1,0 +1,11 @@
+.DS_Store
+.env
+
+web/.next
+web/node_modules
+
+.idea
+
+saves
+
+*.pyc

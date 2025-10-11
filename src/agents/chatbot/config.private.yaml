@@ -1,0 +1,6 @@
+model: siliconflow/Qwen/Qwen3-8B
+system_prompt: You are a helpful assistant.
+thread_id: f02d833e-7199-4941-8e7c-c84493172951
+tools:
+  - query_kb_b23a1
+user_id: 3c8fe9be-bd16-4da8-9240-4e0eac2aacad

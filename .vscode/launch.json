@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "debug run.py",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "src.server.run:app",
+        "--reload",
+        "--host",
+        "localhost",
+        "--port",
+        "5050"
+      ]
+    },
+    {
+      "name": "npm run dev",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/web"
+    }
+  ]
+}
