@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { Agent, Thread } from "@/types/chat.types";
 import { Card } from "@/components/ui/card";
+import { getAgents, getThreads } from "@/api/chat";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -10,36 +11,13 @@ const AgentsCard = () => {
     const { agentId, threadId } = useParams();
     const [agents, setAgents] = useState<Agent[]>([]);
 
-    const getAllAgents = async () => {
-        console.log("fetching all agents...");
-        const response = await fetch("http://localhost:5050/api/chat/agent", {
-            method: "GET",
-        });
-        if (response.ok) {
-            const agents: Agent[] = await response.json();
-            setAgents(agents);
-        }
-    };
-
-    const getAllThreads = async () => {
-        console.log("fetching all threads...");
-        const response = await fetch("http://localhost:5050/api/chat/threads", {
-            method: "GET",
-        });
-        if (response.ok) {
-            const threads: Thread[] = await response.json();
-            return threads;
-        }
-        return [];
-    };
-
     useEffect(() => {
-        getAllAgents();
+        getAgents().then(setAgents);
     }, []);
 
     const handleAgentClick = async (agent: string) => {
         if (agent !== agentId) {
-            const threads = await getAllThreads();
+            const threads = await getThreads();
 
             if (threads.length > 0) {
                 router.push(`/chat/${agent}/${threads[0].id}`);
@@ -59,7 +37,7 @@ const AgentsCard = () => {
 
     return (
         <Suspense fallback={<AgentsCardSkeleton />}>
-            <div className='flex flex-col'>
+            <div className='grid grid-cols-2 gap-2'>
                 {/* 这里的agent的数据类型为Agent */}
                 {agents.map((agent: Agent) => (
                     <div

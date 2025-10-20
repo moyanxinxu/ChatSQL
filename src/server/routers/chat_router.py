@@ -172,3 +172,18 @@ async def list_threads(
         }
         for thread in threads
     ]
+
+
+@chat.get("/threads/latest")
+async def latest_thread(
+    agent_id: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """获取用户的最新对话线程"""
+    query = db.query(Thread).filter(Thread.status == 1)
+    if agent_id:
+        query = query.filter(Thread.agent_id == agent_id)
+
+    thread = query.order_by(Thread.update_at.desc()).first()
+
+    return thread.id if thread else ""

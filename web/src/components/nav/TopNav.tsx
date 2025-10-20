@@ -1,65 +1,184 @@
-import { AgentsCard } from "@/components/nav/AgentsCard";
-import { Bot, ChevronsUpDown, RefreshCcwIcon } from "lucide-react";
+"use client";
+import { Agent, Thread } from "@/types/chat.types";
+import { Bot, ChevronsUpDown, DatabaseBackup, RefreshCcw, TerminalSquare, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { IconButton } from "@/components/ui/shadcn-io/icon-button";
+import { cn } from "@/lib/utils";
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxList, ComboboxTrigger } from "@/components/ui/shadcn-io/combobox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { getAgents, getLatestThread } from "@/api/chat";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ModeToggle } from "@/components/theme/ThemeSwitcher";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
-const AgentSelectButton = () => {
-    const handleClickRefresh = () => {};
+const AgentCombox = () => {
+    const router = useRouter();
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [curAgentId, setCurAgentId] = useState("ChatBotAgent");
+
+    const handleChangeSelectedAgent = async (nextAgentId: string) => {
+        // 首先获取该智能体的最新线程ID，然后跳转页面。
+        if (nextAgentId === curAgentId) {
+            return;
+        } else {
+            console.log("切换智能体：", nextAgentId);
+            setCurAgentId(nextAgentId);
+            const latestThreadId: Thread = await getLatestThread(nextAgentId);
+            router.push(`/chat/${nextAgentId}/${latestThreadId}`);
+        }
+    };
+
+    useEffect(() => {
+        // 初始获取智能体列表
+        const fetchAgents = async () => {
+            const agents: Agent[] = await getAgents();
+            setAgents(agents);
+        };
+        fetchAgents();
+    }, []);
+
     return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button variant='outline'>
+        <div className='agents-combox'>
+            <Combobox
+                data={agents.map((agent) => ({
+                    value: agent.id,
+                    label: agent.name,
+                }))}
+                type='plant'
+                onValueChange={handleChangeSelectedAgent}>
+                <ComboboxTrigger>
                     <Bot />
-                    <span>选择智能体</span>
+                    <span>{curAgentId}</span>
                     <ChevronsUpDown />
-                </Button>
-            </DialogTrigger>
+                </ComboboxTrigger>
 
-            <DialogContent showCloseButton={true}>
-                <DialogHeader>
-                    <DialogTitle>
-                        <div className='flex flex-row items-center gap-2'>
-                            <h1>选择智能体</h1>
-                            <IconButton
-                                icon={RefreshCcwIcon}
-                                active={false}
-                                color={[239, 68, 68]} // red-500
-                                onClick={() => handleClickRefresh()}
-                                size='sm'
-                            />
-                        </div>
-                    </DialogTitle>
-                    <DialogDescription>
-                        从下方卡片中选择一个智能体开始对话！
-                    </DialogDescription>
-                </DialogHeader>
-                {/* 传入一个AgentsTable */}
-                <AgentsCard />
-            </DialogContent>
-        </Dialog>
+                <ComboboxContent>
+                    <ComboboxInput />
+                    <ComboboxEmpty />
+                    <ComboboxGroup>
+                        {agents.map((item: Agent) => (
+                            <ComboboxItem
+                                key={item.id}
+                                value={item.id}
+                                className={cn(
+                                    item.id === curAgentId
+                                        ? "border-2 border-orange-400"
+                                        : "",
+                                )}>
+                                <HoverCard openDelay={50} closeDelay={100}>
+                                    <HoverCardTrigger>
+                                        <div>{item.id}</div>
+                                    </HoverCardTrigger>
+                                    <HoverCardContent side='left'>
+                                        <div className='graph-info flex flex-col gap-1'>
+                                            <div>{item.name}</div>
+                                            <div>{`${item.config_schema.provider}(${item.config_schema.model})`}</div>
+                                        </div>
+                                    </HoverCardContent>
+                                </HoverCard>
+                            </ComboboxItem>
+                        ))}
+                    </ComboboxGroup>
+                </ComboboxContent>
+            </Combobox>
+        </div>
     );
 };
 
 const TopNav = () => {
     return (
-        <div className='top-nav flex w-full flex-row items-center justify-between border-b px-2 py-1'>
-            <div className='agent-select'>
-                <AgentSelectButton />
+        <div className='top-nav flex w-full flex-row items-center justify-end gap-1 border-b px-2 py-1'>
+            <AgentCombox />
+            <ModeToggle />
+        </div>
+    );
+};
+
+const dashBoardPages = [
+    {
+        name: "会话管理",
+        path: "/admin/threads",
+        icon: DatabaseBackup,
+    },
+    {
+        name: "智能体管理",
+        path: "/admin/agents",
+        icon: Bot,
+    },
+    {
+        name: "模型配置",
+        path: "/admin/provider",
+        icon: TerminalSquare,
+    },
+    {
+        name: "用户管理",
+        path: "/admin/user",
+        icon: User2,
+    },
+];
+
+const DashTopNav = () => {
+    const [currentPage, setCurrentPage] = useState(dashBoardPages[0]);
+    const router = useRouter();
+    const pathname = usePathname();
+
+    // 根据当前路径动态设置 currentPage
+    useEffect(() => {
+        const currentPage = dashBoardPages.find(
+            (page) => page.path === pathname,
+        );
+        if (currentPage) {
+            setCurrentPage(currentPage);
+        }
+    }, [pathname]);
+
+    const handleClickMenuItem = (dashBoardPagesItem: {
+        name: string;
+        path: string;
+        icon: any;
+    }) => {
+        if (dashBoardPagesItem.path !== currentPage.path) {
+            router.push(dashBoardPagesItem.path);
+        }
+    };
+    return (
+        <div className='top-nav flex w-full flex-row items-center justify-between border-b px-2 py-2'>
+            <div className='top-nav-left flex flex-row items-center gap-1'>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button>
+                            <currentPage.icon />
+                            {currentPage.name}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        {dashBoardPages.map(
+                            (item) =>
+                                item.name != currentPage.name && (
+                                    <DropdownMenuItem
+                                        key={item.name}
+                                        onClick={() =>
+                                            handleClickMenuItem(item)
+                                        }
+                                        className='items-center'>
+                                        <item.icon />
+                                        {item.name}
+                                    </DropdownMenuItem>
+                                ),
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
-            <div className=''>
+
+            <div className='top-nav-button flex flex-row gap-1'>
+                <Button variant='outline' size='icon'>
+                    <RefreshCcw />
+                </Button>
+
                 <ModeToggle />
             </div>
         </div>
     );
 };
 
-export { TopNav };
+export { TopNav, DashTopNav };

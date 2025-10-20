@@ -1,7 +1,6 @@
 "use client";
 import { Agent } from "@/types/chat.types";
 import { SideNav } from "@/components/nav/SideNav";
-import { ThreadList } from "@/components/thread/ThreadList";
 import { TopNav } from "@/components/nav/TopNav";
 import { useEffect, useState } from "react";
 
@@ -40,8 +39,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }
     }, [selectedAgent]);
 
-    // 调用获取智能体列表的接口
-    // { 'agents': [{ 'id': 'ChatBotAgent', 'name': '对话机器人', 'description': '基础的对话机器人' }] }
     const handleClickRefresh = async () => {
         console.log("clicked refresh icon button!");
         const response = await fetch("http://localhost:5050/api/chat/agent", {
@@ -67,24 +64,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return (
         <div className='agent flex h-full w-full flex-row'>
             <SideNav />
-
-            {/* 智能体问答区域 */}
             <div className='agent-body flex h-full w-full flex-col'>
-                {/* 顶栏 */}
                 <TopNav />
-
-                {/* 对话消息与输入框部分 */}
-                <div className='agent-layout flex h-full w-full flex-row overflow-y-auto'>
-                    {/* threadlist */}
-                    <ThreadList
-                        selectedAgent={selectedAgent}
-                        chatThreads={chatThreads}
-                        setChatThreads={setChatThreads}
-                    />
-
-                    {/* 对话区域 */}
-                    {children}
-                </div>
+                {children}
             </div>
         </div>
     );

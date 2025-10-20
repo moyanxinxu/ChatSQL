@@ -1,13 +1,6 @@
 import Link from "next/link";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import {
-    Bot,
-    GitCompareArrows,
-    LibraryBig,
-    Settings,
-    UserRoundCog,
-    Waypoints,
-} from "lucide-react";
+import { Bot, Gauge, GitCompareArrows, LibraryBig, Settings, UserRoundCog, Waypoints } from "lucide-react";
 
 const sideTopNavList = [
     {
@@ -24,6 +17,11 @@ const sideTopNavList = [
         name: "知识库",
         path: "/database",
         icon: LibraryBig,
+    },
+    {
+        name: "后台",
+        path: "/admin/threads",
+        icon: Gauge,
     },
 ];
 
@@ -47,7 +45,7 @@ const sideButtomNavList = [
 
 const SideNav = () => {
     return (
-        <div className='side-nav flex flex-col justify-between border-r px-1'>
+        <div className='side-nav flex h-full flex-col justify-between gap-2 border-r px-1'>
             <div>
                 {/* 头像区域 */}
                 <div className='avatar flex items-center justify-center p-2'>
@@ -64,7 +62,7 @@ const SideNav = () => {
                             <Link
                                 href={item.path}
                                 className='flex flex-col items-center'>
-                                <item.icon />
+                                <item.icon size={16} />
                                 <span className='text-nowrap'>{item.name}</span>
                             </Link>
                         </div>
@@ -79,7 +77,7 @@ const SideNav = () => {
                         <Link
                             href={item.path}
                             className='flex flex-col items-center'>
-                            <item.icon />
+                            <item.icon size={16} />
                             <span>{item.name}</span>
                         </Link>
                     </div>

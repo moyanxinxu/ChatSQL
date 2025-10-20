@@ -1,4 +1,3 @@
-import uuid
 from dataclasses import dataclass, field
 
 from src.agents.registry import Configuration

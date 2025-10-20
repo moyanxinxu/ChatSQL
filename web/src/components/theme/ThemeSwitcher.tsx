@@ -1,14 +1,13 @@
-"use client";
-import * as React from "react";
 import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Moon, Sun } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Moon, Sun, SunMoon } from "lucide-react";
 import { useTheme } from "next-themes";
+
+const themeModes = [
+    { value: "light", label: "亮色模式", icon: Sun },
+    { value: "dark", label: "深色模式", icon: Moon },
+    { value: "system", label: "跟随系统", icon: SunMoon },
+];
 
 const ModeToggle = () => {
     const { setTheme } = useTheme();
@@ -22,15 +21,16 @@ const ModeToggle = () => {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end'>
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                    亮色模式
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                    深色模式
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                    跟随系统
-                </DropdownMenuItem>
+                {themeModes.map((mode) => (
+                    <DropdownMenuItem
+                        key={mode.value}
+                        onClick={() => setTheme(mode.value)}>
+                        <div className='flex flex-row items-center gap-2'>
+                            <mode.icon />
+                            {mode.label}
+                        </div>
+                    </DropdownMenuItem>
+                ))}
             </DropdownMenuContent>
         </DropdownMenu>
     );
