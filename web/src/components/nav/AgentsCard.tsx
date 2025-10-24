@@ -20,7 +20,7 @@ const AgentsCard = () => {
             const threads = await getThreads();
 
             if (threads.length > 0) {
-                router.push(`/chat/${agent}/${threads[0].id}`);
+                router.replace(`/chat/${agent}/${threads[0].id}`);
             } else {
                 const newThread = new Thread(agent, "新的对话...", "描述", 1);
                 await fetch("http://localhost:5050/api/chat/thread", {
@@ -30,7 +30,7 @@ const AgentsCard = () => {
                     },
                     body: JSON.stringify(newThread),
                 });
-                router.push(`/chat/${agent}/${newThread.id}`);
+                router.replace(`/chat/${agent}/${newThread.id}`);
             }
         }
     };

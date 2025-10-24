@@ -3,7 +3,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import AIMessageChunk, HumanMessage
+from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
 from sqlalchemy.orm import Session
 
 from src.agents.agent_manager import agent_manager
@@ -105,12 +105,8 @@ async def chat_agent(
     async def stream_messages():
         configurable = {"thread_id": thread_id}
         # 代表服务端已经收到了请求
-        yield make_chunk(
-            status="init",
-            content="",
-            configurable=configurable,
-            type="ai",
-        )
+
+        yield make_chunk(status="init", content=query, type="human")
 
         try:
             agent = agent_manager.get_agent(agent_id)
@@ -124,21 +120,15 @@ async def chat_agent(
 
         try:
             async for msg, metadata in agent.stream_messages(messages, configurable):
-                if isinstance(msg, AIMessageChunk):
-                    yield make_chunk(content=msg.content, status="loading", configurable=configurable, type='ai') # fmt: skip
-                else:
-                    yield make_chunk(
-                        status="loading",
-                        configurable=configurable,
-                        type="ai",
-                    )
+                if isinstance(msg, AIMessageChunk) and not msg.tool_calls:
+                    yield make_chunk(status="loading", type='ai', content=msg.content) # fmt: skip
+                if isinstance(msg, ToolMessage):
+                    # 工具执行结果
+                    yield make_chunk(status='loading', type='tool', content=msg.content, name=msg.name) # fmt: skip
 
-            yield make_chunk(
-                content="",
-                status="finished",
-                configurable=configurable,
-                type="ai",
-            )
+            # 对话结束
+            yield make_chunk(content='', status="finished", type="ai") # fmt: skip
+
         except Exception as e:
             yield make_chunk(
                 message=f"Error streaming messages: {e}",

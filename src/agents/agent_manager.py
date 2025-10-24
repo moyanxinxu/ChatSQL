@@ -1,6 +1,7 @@
 import asyncio
 
 from src.agents.chatbot import ChatBotAgent
+from src.agents.weatherbot.graph import WeatherBotAgent
 
 
 class AgentsManager:
@@ -36,4 +37,5 @@ class AgentsManager:
 
 agent_manager = AgentsManager()
 agent_manager.register_agent(ChatBotAgent)
+agent_manager.register_agent(WeatherBotAgent)
 agent_manager.init_all_agents()

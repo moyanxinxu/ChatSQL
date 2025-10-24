@@ -95,7 +95,6 @@ const getChatMessages = async (agentId: string, threadId: string) => {
 };
 
 const createThread = async (nextThread: Thread) => {
-    console.log("创建线程请求体：", JSON.stringify(nextThread));
     const resp = await fetch(`${chat_router}/thread`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

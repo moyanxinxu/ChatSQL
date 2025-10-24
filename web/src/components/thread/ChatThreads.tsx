@@ -1,28 +1,30 @@
 import Link from "next/link";
 import { BaseChunk, BaseMessage, Thread } from "@/types/chat.types";
 import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Delete, MessageSquarePlus, PencilLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createThread, deleteThread, getChatMessages, getThreads } from "@/api/chat";
-import { Delete, MessageSquarePlus, PanelLeftClose, PencilLine, RefreshCcw, Trash2 } from "lucide-react";
 import { IconButton } from "@/components/ui/shadcn-io/icon-button";
 import { Message, MessageContent } from "@/components/ui/shadcn-io/ai/message";
 import { PromptInput, PromptInputSubmit, PromptInputTextarea, PromptInputToolbar } from "@/components/ui/shadcn-io/ai/prompt-input";
 import { Response } from "@/components/ui/shadcn-io/ai/response";
 import { truncateTitle } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Tool } from "@/components/tools/Tool";
 
 const ChatThreads = () => {
-    const [input, setInput] = useState("");
     const [chatThreads, setChatThreads] = useState<Thread[]>([]);
     const [chatMessages, setChatMessages] = useState<BaseMessage[]>([]);
+    const [isThreadListHidden, setIsThreadListHidden] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
 
     const params = useParams();
     const router = useRouter();
-    const agentId = params.agentId;
-    const threadId = params.threadId;
+    const [agentId] = useState(params.agentId);
+    const [threadId] = useState(params.threadId);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const handleCreateThread = async () => {
         const nextThread = new Thread(agentId, "新的对话...");
@@ -31,7 +33,7 @@ const ChatThreads = () => {
 
         if (response) {
             setChatThreads([nextThread, ...chatThreads]);
-            router.push(`/chat/${agentId}/${nextThread.id}`);
+            router.replace(`/chat/${agentId}/${nextThread.id}`);
         } else {
             console.error("创建线程失败");
         }
@@ -44,39 +46,50 @@ const ChatThreads = () => {
                 (thread) => thread.id !== threadId,
             );
             if (filteredChatThreads.length > 0) {
-                router.push(`/chat/${agentId}/${filteredChatThreads[0].id}`);
+                router.replace(`/chat/${agentId}/${filteredChatThreads[0].id}`);
             } else {
-                router.push(`/chat`);
+                router.replace(`/chat/${agentId}`);
             }
             setChatThreads(filteredChatThreads);
         } else {
             console.error("删除线程失败");
         }
     };
-
     const handleMessageData = (chunk: BaseChunk) => {
-        console.log(chunk);
-        if (chunk.type === "ai" && chunk.content) {
-            setChatMessages((prevMessages) =>
-                prevMessages.map((message, i) =>
-                    i === prevMessages.length - 1
-                        ? {
-                              ...message,
-                              content: message.content + chunk.content,
-                          }
-                        : message,
-                ),
-            );
-        }
+        setChatMessages(prev => {
+            const updatedMessages = [...prev];
+
+            if (chunk.type === "human") {
+                updatedMessages.push(new BaseMessage("human", chunk.content));
+            }
+
+            if (chunk.type === "tool") {
+                updatedMessages.push(new BaseMessage("tool", chunk.content, chunk.name));
+            }
+
+            if (chunk.type === "ai") {
+                const lastMessage = updatedMessages[updatedMessages.length - 1];
+                if (!lastMessage || lastMessage.type !== "ai") {
+                    updatedMessages.push(new BaseMessage("ai", chunk.content));
+                } else {
+                    // 创建一个新的消息对象，而不是直接修改旧消息对象
+                    const updatedLastMessage = new BaseMessage(lastMessage.type, lastMessage.content + chunk.content);
+                    updatedMessages[updatedMessages.length - 1] = updatedLastMessage;
+                }
+            }
+            console.log("更新后的消息列表:", updatedMessages);
+            return updatedMessages;
+        });
     };
+
+
+    const handlePanelToggle = () => {
+        setIsThreadListHidden(!isThreadListHidden);
+    }
 
     const chatStream = async (query: string) => {
         if (isLoading) return;
 
-        const humanMessage = new BaseMessage("human", query);
-        const aiMessage = new BaseMessage("ai", "");
-
-        setChatMessages((messages) => [...messages, humanMessage, aiMessage]);
 
         const response = await fetch(
             `http://localhost:5050/api/chat/agent/${agentId}?agent_id=${agentId}`,
@@ -133,62 +146,41 @@ const ChatThreads = () => {
     };
 
     useEffect(() => {
-        if (agentId) {
-            const getAgentThreads = async () => {
+        const fetchData = async () => {
+            if (agentId) {
                 const threads = await getThreads();
                 const currThreads = threads.filter(
                     (thread) => thread.agent_id === agentId,
                 );
-
                 setChatThreads(currThreads);
-            };
 
-            getAgentThreads();
-        }
-    }, [agentId]);
+                if (threads.length > 0 && threads.find(t => t.id === threadId)) {
+                    const messages = await getChatMessages(agentId, threadId);
+                    setChatMessages(messages);
+                }
+            }
+        };
 
-    useEffect(() => {
-        if (agentId && threadId) {
-            const fetchMessages = async () => {
-                const messages = await getChatMessages(agentId, threadId);
-                setChatMessages(messages);
-            };
-            fetchMessages();
-        }
+        fetchData();
     }, [agentId, threadId]);
-
-    const handleOnSubmit = (event?: React.FormEvent) => {
-        if (event) {
-            event.preventDefault();
-        }
-        const text = input.trim();
-        if (text) {
-            setIsLoading(true);
-            setInput("");
-            chatStream(text).finally(() => {
-                setIsLoading(false);
-            });
-        }
-    };
 
     return (
         <div className='thread-and-chat flex h-full w-full flex-row overflow-y-auto'>
-            <div className='thread flex h-full flex-col border-r'>
+            <div
+                className={cn(
+                    'thread flex h-full flex-col border-r transition-all duration-300',
+                    isThreadListHidden ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-64'
+                )}
+            >
                 {/* 线程列表顶部区域 */}
-                <div className='thread-top flex flex-row gap-4 border-b px-2 py-1 text-nowrap'>
+                <div className='thread-top flex flex-row gap-4 border-b px-2 py-1 text-nowrap justify-end'>
+
+
                     {/* 创建新对话按钮 */}
-                    <div className='next-chat-button flex flex-row gap-1'>
+                    <div className='next-chat-button flex flex-row'>
                         <Button onClick={handleCreateThread}>
                             <MessageSquarePlus />
                             <p>创建新对话</p>
-                        </Button>
-                    </div>
-
-                    {/* 折叠侧边栏按钮 */}
-                    <div className='toggle-sidebar flex flex-row'>
-                        <Button variant='outline' onClick={() => {}}>
-                            <p>折叠</p>
-                            <PanelLeftClose />
                         </Button>
                     </div>
                 </div>
@@ -220,7 +212,7 @@ const ChatThreads = () => {
                                 <IconButton
                                     icon={PencilLine}
                                     size='sm'
-                                    onClick={() => {}}
+                                    onClick={() => { }}
                                 />
 
                                 {/* 红色删除按钮 */}
@@ -236,59 +228,76 @@ const ChatThreads = () => {
                         </div>
                     ))}
                 </div>
-
-                <div className='thread-bottom border-t px-2 py-1'>
-                    {/* 线程底部区域 */}
-                    <div className='clear-button flex flex-row items-center justify-between'>
-                        <Button onClick={() => {}}>
-                            <p>清空</p>
-                            <Trash2 />
-                        </Button>
-
-                        <Button variant='outline' onClick={() => {}}>
-                            <RefreshCcw />
-                        </Button>
-                    </div>
-                </div>
             </div>
+
+
+            <div className={cn('panel flex items-center justify-center', !isThreadListHidden && 'hidden')}>
+                <ChevronRight onClick={handlePanelToggle} />
+            </div>
+
+            <div className={cn('panel flex items-center justify-center', isThreadListHidden && 'hidden')}>
+                <ChevronLeft onClick={handlePanelToggle} />
+            </div>
+
+
             <div className='chat-messages-and-input flex w-full flex-col justify-between'>
                 <div className='flex flex-1 overflow-y-scroll'>
                     <div className='mx-auto flex w-[80%] max-w-4xl flex-col p-3'>
-                        {chatMessages.map((message) => (
-                            <Message
-                                key={message.id}
-                                from={
-                                    message.type === "human"
-                                        ? "user"
-                                        : "assistant"
-                                }>
-                                {/* {message.type === "human" ? (
-                                        <MessageAvatar
-                                            src='https://github.com/dovazencot.png'
-                                            name='User'
-                                        />
-                                    ) : (
-                                        <MessageAvatar
-                                            src='https://github.com/openai.png'
-                                            name='AI'
-                                        />
-                                    )} */}
-                                <MessageContent>
-                                    <Response>{message.content}</Response>
-                                </MessageContent>
-                            </Message>
-                        ))}
+                        {chatMessages.map((message) => {
+                            switch (message.type) {
+                                case "human":
+                                    return (
+                                        <Message key={message.id} from="user">
+                                            <MessageContent>
+                                                <Response>{message.content}</Response>
+                                            </MessageContent>
+                                        </Message>
+                                    );
+
+                                case "ai":
+                                    if (!message.tool_calls || message.tool_calls.length === 0) {
+                                        return (
+                                            <Message key={message.id} from="assistant">
+                                                <MessageContent>
+                                                    <Response>{message.content}</Response>
+                                                </MessageContent>
+                                            </Message>
+                                        );
+                                    }
+                                    return null;
+
+                                case "tool":
+                                    return (
+                                        <div className="tool p-1" key={message.id}>
+                                            <Tool tool_name={message.name} tool_content={message.content} />
+                                        </div>
+                                    );
+
+                                default:
+                                    return null;
+                            }
+                        })}
                     </div>
                 </div>
 
+
                 <div className='input-prompt flex max-w-full px-[10%] pb-2'>
-                    <PromptInput onSubmit={handleOnSubmit}>
+                    <PromptInput
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            const inputValue = inputRef.current?.value.trim();
+                            if (inputValue) {
+                                setIsLoading(true);
+                                inputRef.current.value = ""; // 清空输入框
+                                chatStream(inputValue).finally(() => {
+                                    setIsLoading(false);
+                                });
+                            }
+                        }}
+                    >
                         <PromptInputTextarea
                             placeholder='在此输入你的提示...'
-                            value={input}
-                            onChange={(e) => {
-                                setInput(e.target.value);
-                            }}
+                            ref={inputRef}
                         />
                         <PromptInputToolbar>
                             <div></div>

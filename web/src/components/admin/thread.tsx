@@ -45,7 +45,7 @@ const ThreadList = ({ maxSize }: ThreadListProps) => {
         <div className='rounded-md border'>
             <Table>
                 <TableCaption>对话记录</TableCaption>
-                <TableHeader className='sticky top-0 z-10 bg-white'>
+                <TableHeader className='sticky'>
                     <TableRow>
                         {threadListHeader.map((header) => (
                             <TableHead key={header}>{header}</TableHead>

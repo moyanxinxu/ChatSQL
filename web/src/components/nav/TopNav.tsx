@@ -3,39 +3,58 @@ import { Agent, Thread } from "@/types/chat.types";
 import { Bot, ChevronsUpDown, DatabaseBackup, RefreshCcw, TerminalSquare, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxList, ComboboxTrigger } from "@/components/ui/shadcn-io/combobox";
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxTrigger } from "@/components/ui/shadcn-io/combobox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getAgents, getLatestThread } from "@/api/chat";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ModeToggle } from "@/components/theme/ThemeSwitcher";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 
 const AgentCombox = () => {
     const router = useRouter();
+    const pathname = usePathname();
+
+    const { agentId, threadId } = useParams()
+
     const [agents, setAgents] = useState<Agent[]>([]);
-    const [curAgentId, setCurAgentId] = useState("ChatBotAgent");
+    const [curAgentId, setCurAgentId] = useState(agentId);
 
     const handleChangeSelectedAgent = async (nextAgentId: string) => {
         // 首先获取该智能体的最新线程ID，然后跳转页面。
-        if (nextAgentId === curAgentId) {
-            return;
-        } else {
-            console.log("切换智能体：", nextAgentId);
+        if (nextAgentId !== curAgentId && !threadId) {
             setCurAgentId(nextAgentId);
-            const latestThreadId: Thread = await getLatestThread(nextAgentId);
-            router.push(`/chat/${nextAgentId}/${latestThreadId}`);
+            router.replace(`/chat/${nextAgentId}`);
+        } else {
+            if (threadId) {
+                setCurAgentId(nextAgentId);
+
+                const latestThreadId: Thread = await getLatestThread(nextAgentId);
+                router.replace(`/chat/${nextAgentId}/${latestThreadId}`);
+            }
         }
     };
 
     useEffect(() => {
         // 初始获取智能体列表
-        const fetchAgents = async () => {
+        const initAgents = async () => {
             const agents: Agent[] = await getAgents();
             setAgents(agents);
         };
-        fetchAgents();
+        initAgents();
     }, []);
+
+    useEffect(
+        () => {
+            if (pathname === '/chat') {
+                const redirect_agent_id = agents[0]?.id;
+
+                setCurAgentId(redirect_agent_id);
+                router.replace(`/chat/${redirect_agent_id}`);
+            }
+
+        }, [pathname, agents, router]
+    );
 
     return (
         <div className='agents-combox'>
@@ -44,8 +63,9 @@ const AgentCombox = () => {
                     value: agent.id,
                     label: agent.name,
                 }))}
-                type='plant'
+                type='智能体'
                 onValueChange={handleChangeSelectedAgent}>
+                {/* > */}
                 <ComboboxTrigger>
                     <Bot />
                     <span>{curAgentId}</span>
@@ -61,9 +81,7 @@ const AgentCombox = () => {
                                 key={item.id}
                                 value={item.id}
                                 className={cn(
-                                    item.id === curAgentId
-                                        ? "border-2 border-orange-400"
-                                        : "",
+                                    item.id === curAgentId ? "border-2" : "",
                                 )}>
                                 <HoverCard openDelay={50} closeDelay={100}>
                                     <HoverCardTrigger>
@@ -138,7 +156,7 @@ const DashTopNav = () => {
         icon: any;
     }) => {
         if (dashBoardPagesItem.path !== currentPage.path) {
-            router.push(dashBoardPagesItem.path);
+            router.replace(dashBoardPagesItem.path);
         }
     };
     return (

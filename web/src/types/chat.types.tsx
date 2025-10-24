@@ -9,18 +9,26 @@ interface Message {
 interface BaseChunk {
     content: string;
     status: "init" | "loading" | "finished";
-    type: "human" | "ai" | "system";
-    configurable?: any;
+    type: "human" | "ai" | "system" | "tool_calls" | "tool";
+    name?: string;
 }
 
 class BaseMessage {
     id: string;
-    type: "human" | "ai" | "system";
+    type: "human" | "ai" | "system" | "tool_calls" | "tool";
     content: string | "";
+    name?: string;
+    tool_calls?: any[];
 
-    constructor(type: "human" | "ai" | "system", content: string, id?: string) {
+    constructor(
+        type: "human" | "ai" | "system" | "tool_calls" | "tool",
+        content: string,
+        name?: string,
+        id?: string,
+    ) {
         this.type = type;
         this.content = content;
+        this.name = name;
         this.id = id || uuidv4();
     }
 }
