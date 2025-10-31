@@ -17,7 +17,7 @@ const navLinks = [
     },
     {
         name: "设置",
-        href: "/settings",
+        href: "/setting",
     },
 ];
 

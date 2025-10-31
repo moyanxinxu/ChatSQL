@@ -1,3 +1,5 @@
+import { UserList } from "@/components/admin/user_table";
+
 export default function Home() {
-    return <div>用户管理</div>;
+    return <UserList />
 }

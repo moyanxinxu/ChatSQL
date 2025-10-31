@@ -1,8 +1,13 @@
 import re
 
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
 
 from src.server.db import db_manager
+from src.server.utils.auth_util import AuthUtils
+from src.server.models.user import User
 
 # 定义OAuth2密码承载器，指定token URL
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
@@ -25,6 +30,75 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# 获取当前用户
+async def get_current_user(
+    token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="无效的凭证",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    # 允许无token访问公开路径
+    if token is None:
+        return None
+
+    try:
+        # 验证token
+        payload = AuthUtils.verify_access_token(token)
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    except ValueError as e:
+        # 捕获AuthUtils.verify_access_token可能抛出的ValueError
+        # 例如令牌过期或无效
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),  # 将错误信息直接传递给客户端
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 查找用户
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+
+    return user
+
+
+async def get_required_user(user: User | None = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="请登录后再访问",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+# 获取管理员用户
+async def get_admin_user(current_user: User = Depends(get_required_user)):
+    if current_user.role not in ["admin", "superadmin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="需要管理员权限",
+        )
+    return current_user
+
+
+# 获取超级管理员用户
+async def get_superadmin_user(current_user: User = Depends(get_required_user)):
+    if current_user.role != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="需要超级管理员权限",
+        )
+    return current_user
 
 
 # 检查路径是否为公开路径

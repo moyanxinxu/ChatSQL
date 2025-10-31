@@ -3,7 +3,7 @@ import { MagneticButton } from "@/components/ui/shadcn-io/magnetic-button";
 import { MessageCircleDashed } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
-import { createThread } from "@/api/chat";
+import { createThread } from "@/app/api/chat";
 import { Thread } from "@/types/chat.types";
 
 const NewChatButton = () => {
@@ -20,23 +20,20 @@ const NewChatButton = () => {
     };
 
     return (
-        <div className="homepage flex flex-col h-full w-full">
-            <div className='flex flex-col h-full w-full items-center justify-center bg-gray-50 dark:bg-black gap-2'>
+        <div className='homepage flex h-full w-full flex-col'>
+            <div className='flex h-full w-full flex-col items-center justify-center gap-2 bg-gray-50 dark:bg-black'>
                 <MagneticButton
                     particleCount={8}
                     attractRadius={80}
                     onClick={handleNextChat}>
                     <div className='flex flex-row items-center gap-2'>
-                        <h1>
-                            开始新对话
-                        </h1>
+                        <h1>开始新对话</h1>
                         <MessageCircleDashed size={18} />
                     </div>
                 </MagneticButton>
             </div>
         </div>
-
     );
-}
+};
 
-export { NewChatButton }
+export { NewChatButton };

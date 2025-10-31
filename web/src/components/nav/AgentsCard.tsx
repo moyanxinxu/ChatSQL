@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { Agent, Thread } from "@/types/chat.types";
 import { Card } from "@/components/ui/card";
-import { getAgents, getThreads } from "@/api/chat";
+import { getAgents, getThreads } from "@/app/api/chat";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";

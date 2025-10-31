@@ -5,17 +5,22 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxTrigger } from "@/components/ui/shadcn-io/combobox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { getAgents, getLatestThread } from "@/api/chat";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { getAgents, getLatestThread } from "@/app/api/chat";
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { ModeToggle } from "@/components/theme/ThemeSwitcher";
 import { useEffect, useState } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
+import { NewUserForm } from "@/components/user/NewUserForm";
 
 const AgentCombox = () => {
     const router = useRouter();
     const pathname = usePathname();
 
-    const { agentId, threadId } = useParams()
+    const { agentId, threadId } = useParams();
 
     const [agents, setAgents] = useState<Agent[]>([]);
     const [curAgentId, setCurAgentId] = useState(agentId);
@@ -29,7 +34,8 @@ const AgentCombox = () => {
             if (threadId) {
                 setCurAgentId(nextAgentId);
 
-                const latestThreadId: Thread = await getLatestThread(nextAgentId);
+                const latestThreadId: Thread =
+                    await getLatestThread(nextAgentId);
                 router.replace(`/chat/${nextAgentId}/${latestThreadId}`);
             }
         }
@@ -44,17 +50,14 @@ const AgentCombox = () => {
         initAgents();
     }, []);
 
-    useEffect(
-        () => {
-            if (pathname === '/chat') {
-                const redirect_agent_id = agents[0]?.id;
+    useEffect(() => {
+        if (pathname === "/chat") {
+            const redirect_agent_id = agents[0]?.id;
 
-                setCurAgentId(redirect_agent_id);
-                router.replace(`/chat/${redirect_agent_id}`);
-            }
-
-        }, [pathname, agents, router]
-    );
+            setCurAgentId(redirect_agent_id);
+            router.replace(`/chat/${redirect_agent_id}`);
+        }
+    }, [pathname, agents, router]);
 
     return (
         <div className='agents-combox'>
@@ -125,12 +128,12 @@ const dashBoardPages = [
     },
     {
         name: "模型配置",
-        path: "/admin/provider",
+        path: "/admin/providers",
         icon: TerminalSquare,
     },
     {
         name: "用户管理",
-        path: "/admin/user",
+        path: "/admin/users",
         icon: User2,
     },
 ];
@@ -188,7 +191,8 @@ const DashTopNav = () => {
                 </DropdownMenu>
             </div>
 
-            <div className='top-nav-button flex flex-row gap-1'>
+            <div className='top-nav-button flex flex-row items-center gap-1'>
+                {pathname === "/admin/users" && <NewUserForm />}
                 <Button variant='outline' size='icon'>
                     <RefreshCcw />
                 </Button>

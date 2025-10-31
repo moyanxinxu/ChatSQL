@@ -2,6 +2,8 @@ import json
 import os
 from pathlib import Path
 
+import yaml
+
 
 class SimpleConfig(dict):
     def __str__(self) -> str:
@@ -35,3 +37,21 @@ class Config(SimpleConfig):
         self.filename = str(Path(f"{self.save_path}/config/base.yaml"))
 
         os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+
+    def dump_config(self):
+        return self
+
+    def save(self):
+        if self.filename is None:
+            self.filename = os.path.join(self.save_dir, "config", "base.yaml")
+            os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+
+        if self.filename.endswith(".json"):
+            with open(self.filename, "w+") as f:
+                json.dump(self.__dict__(), f, indent=4, ensure_ascii=False)
+        elif self.filename.endswith(".yaml"):
+            with open(self.filename, "w+") as f:
+                yaml.dump(self.__dict__(), f, indent=2, allow_unicode=True)
+        else:
+            with open(self.filename, "w+") as f:
+                json.dump(self, f, indent=4)

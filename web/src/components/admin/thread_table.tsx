@@ -3,6 +3,7 @@ import { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, Tabl
 import { threadItem } from "@/types/dashboard/thread";
 import { truncateTitle } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { getThreads } from "@/app/api/chat";
 
 interface ThreadListProps {
     maxSize: number;
@@ -21,24 +22,12 @@ const threadListHeader = [
 const ThreadList = ({ maxSize }: ThreadListProps) => {
     const [threads, setThreads] = useState<threadItem[]>([]);
 
-    const getAllThreads = async () => {
-        const response = await fetch("http://localhost:5050/api/chat/threads", {
-            method: "GET",
-        });
-        if (response.ok) {
-            const threads = await response.json();
-            console.log("Fetched threads:", threads);
-            setThreads(threads);
-            return threads;
-        } else {
-            console.log("failed to exec getAllThreads");
-            return [];
-        }
-    };
-
     useEffect(() => {
-        getAllThreads();
-        console.log(threads);
+        const fetchThreads = async () => {
+            const threads = await getThreads();
+            setThreads(threads);
+        };
+        fetchThreads();
     }, []);
 
     return (

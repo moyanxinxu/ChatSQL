@@ -43,7 +43,7 @@ const AgentsCard = () => {
     }, []);
 
     return (
-        <div className='agent-configs grid grid-cols-2 gap-3 p-2'>
+        <div className='agent-configs grid grid-cols-2 gap-3'>
             {agentConfigs.map((agent) => (
                 <div
                     key={agent.id}
